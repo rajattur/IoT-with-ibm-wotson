@@ -15,17 +15,26 @@ const createUserEntry = (req,res,twilioReq) => {
     let options = {
         workspace_id: 'a13baecf-4946-4656-acad-e37ef04f68ea',
         input: {'text': twilioReq.Body},
+        context: {
+            conversation_id: (Users.get(twilioReq.From)) ? Users.get(twilioReq.From) : undefined
+        }
     };
 
+    console.log('First-time: ',options)
 
     conversation.message(options,  function(err, response) {
         let intent;
         if (err)
             console.log('error:', err);
         else {
+            console.log(JSON.stringify(response,undefined,2));
             intent = response.intents[0].intent;
             const twiml = new MessagingResponse();
-            twiml.message(response.output.text[0]);
+            // twiml.message(response.output.text[0]);
+
+            response.output.text.forEach((text) => {
+                twiml.message(text);
+            })
 
             if (Users.get(twilioReq.From)) {
                 console.log(`User with number ${twilioReq.From} exists`);
@@ -33,6 +42,7 @@ const createUserEntry = (req,res,twilioReq) => {
             } else {
                 console.log('creating users info');
                 Users.set(twilioReq.From, response.context.conversation_id);
+                options.context = {conversation_id : Users.get(twilioReq.From)}
                 console.log(Users.get(twilioReq.From))
             }
             console.log(options);
